@@ -1,0 +1,74 @@
+# robots.txt für HCPheute auf GitHub Pages
+# Alle bekannten Suchmaschinen und KI-Crawler werden blockiert.
+
+# ── Allgemeine Suchmaschinen ──────────────────────────────────
+User-agent: *
+Disallow: /
+
+# ── Google (Suche + KI-Training) ─────────────────────────────
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+# ── Bing / Microsoft ──────────────────────────────────────────
+User-agent: Bingbot
+Disallow: /
+
+User-agent: msnbot
+Disallow: /
+
+# ── KI-Crawler (OpenAI, Anthropic, Meta, Apple, Perplexity …) ─
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Applebot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+# ── Web-Archivierung blockieren ───────────────────────────────
+User-agent: ia_archiver
+Disallow: /
+
+User-agent: archive.org_bot
+Disallow: /
+
+# ── Common Crawl (größtes KI-Trainingsdaten-Archiv) ───────────
+User-agent: CCBot
+Disallow: /

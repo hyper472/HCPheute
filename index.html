@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+<!-- ── PWA / Home-Bildschirm (Muster: Braurechner) ──────────────────────── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HCPheute">
+<meta name="theme-color" content="#1a4a9e">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>HCPheute</title>
+
+<!-- ── Crawler-Sperren (Muster: Tanklog) ─────────────────────────────────
+     Verhindert Indexierung durch Suchmaschinen und untersagt KI-Crawlern
+     die Verwendung des Inhalts für Training (soweit Meta-Tags respektiert).
+──────────────────────────────────────────────────────────────────────── -->
+<meta name="robots"    content="noindex, nofollow, noarchive, noimageindex, nositelinkssearchbox, noodp">
+<meta name="googlebot" content="noindex, nofollow, noarchive, noimageindex">
+<meta name="bingbot"   content="noindex, nofollow, noarchive, noimageindex">
+<meta name="robots"    content="noai, noimageai">
+<meta name="robots"    content="max-snippet:-1, max-image-preview:none, max-video-preview:-1">
+<meta name="archive"   content="noarchive">
+<meta property="og:title"       content="">
+<meta property="og:description" content="">
+<meta property="og:image"       content="">
+
+<style>
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface2: #eaf0f8;
+  --border: #c0cce0;
+  --blue: #1a4a9e;
+  --blue2: #2a5abf;
+  --orange: #e07010;
+  --orange2: #f08020;
+  --text: #111820;
+  --muted: #506080;
+  --red: #c0392b;
+  --green: #2a6a3a;
+  --r: 16px;
+  --rs: 10px;
+  --safe: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overscroll-behavior:none}
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,'Helvetica Neue',sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+#app { display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; }
+
+/* ── Header ── */
+header {
+  flex-shrink:0;
+  padding:16px 20px 14px;
+  padding-top:max(16px, env(safe-area-inset-top));
+  background:linear-gradient(135deg, var(--blue) 60%, var(--blue2) 100%);
+  box-shadow:0 4px 0 var(--orange), 0 6px 16px rgba(0,0,0,.15);
+}
+.logo {
+  font-family:'Georgia','Times New Roman',serif;
+  font-weight:bold; font-size:26px; letter-spacing:1px;
+  color:#ffffff; line-height:1;
+}
+.subtitle {
+  font-family:'Menlo','Courier New',monospace;
+  font-size:10px; color:rgba(255,255,255,.7);
+  letter-spacing:1px; text-transform:uppercase; margin-top:3px;
+}
+
+/* ── Tabs ── */
+.tabs { display:flex; gap:4px; padding:14px 20px 0; background:var(--bg); }
+.tab {
+  flex:1; text-align:center; padding:10px;
+  font-family:'Georgia',serif; font-weight:bold; font-size:14px;
+  color:var(--muted); background:transparent; border:none; cursor:pointer;
+  border-bottom:3px solid transparent;
+  -webkit-tap-highlight-color:transparent;
+}
+.tab.active { color:var(--blue); border-bottom-color:var(--orange); }
+
+#content { flex:1; overflow-y:auto; padding:16px 20px; padding-bottom:calc(24px + var(--safe)); }
+.view { display:none; }
+.view.active { display:block; animation:fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Karte ── */
+.card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r);
+  padding:20px; box-shadow:0 2px 12px rgba(0,0,0,.06); margin-bottom:16px;
+}
+.card-title {
+  font-family:'Georgia',serif; font-size:19px; font-weight:bold; color:var(--blue);
+  margin-bottom:16px; padding-bottom:10px; border-bottom:3px solid var(--orange);
+}
+
+/* ── Felder ── */
+.field { margin-bottom:14px; }
+.field label {
+  display:block; font-size:11px; color:var(--muted); font-weight:600;
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px;
+}
+.field input, .field select {
+  width:100%; background:#ffffff; border:1.5px solid var(--border); border-radius:8px;
+  padding:11px 12px; color:var(--text); font-family:'Menlo','Courier New',monospace;
+  font-size:16px; outline:none; -webkit-appearance:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus {
+  border-color:var(--blue2); box-shadow:0 0 0 3px rgba(42,90,191,.15);
+}
+.field-hint { font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.55; font-family:-apple-system,sans-serif; }
+
+.radio-group { display:flex; gap:8px; }
+.radio-group label {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+  padding:9px; background:#ffffff; border:1.5px solid var(--border); border-radius:8px;
+  cursor:pointer; font-size:13px; font-weight:600; color:var(--text);
+  font-family:-apple-system,sans-serif;
+}
+.radio-group input { display:none; }
+.radio-group label:has(input:checked) {
+  border-color:var(--orange); background:rgba(224,112,16,.08); color:var(--orange);
+}
+
+/* ── Buttons ── */
+.btn-main {
+  width:100%; margin-top:6px; padding:14px; background:var(--orange); color:#ffffff; border:none;
+  border-radius:10px; font-family:'Georgia',serif; font-weight:bold; letter-spacing:1.5px; font-size:17px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s, transform .1s;
+}
+.btn-main:active { background:var(--orange2); transform:scale(.99); }
+
+/* ── Ergebnis ── */
+.result-box {
+  margin-top:18px; background:var(--surface2); border:1.5px solid var(--blue2);
+  border-radius:10px; padding:16px; display:none;
+}
+.result-box.show { display:block; animation:fadeIn .2s ease; }
+.result-label { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.result-value { font-family:'Georgia',serif; font-weight:bold; font-size:38px; color:var(--blue); line-height:1; }
+.result-unit { font-family:'Menlo',monospace; font-size:13px; color:var(--muted); margin-left:6px; }
+
+.calc-steps { margin-top:14px; padding-top:14px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:8px; }
+.calc-step { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; gap:12px; }
+.calc-step-label { color:var(--muted); }
+.calc-step-value { font-family:'Menlo',monospace; color:var(--text); font-weight:600; white-space:nowrap; }
+
+/* ── Platzliste ── */
+.course-item {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:10px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
+}
+.course-info-name { font-family:'Georgia',serif; font-weight:bold; font-size:16px; color:var(--text); }
+.course-info-meta { font-family:'Menlo',monospace; font-size:11.5px; color:var(--muted); margin-top:3px; }
+.course-acts { display:flex; gap:6px; flex-shrink:0; }
+.btn-icon-sm {
+  width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border); background:#ffffff;
+  cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-icon-sm.del { color:var(--red); border-color:rgba(192,57,43,.3); }
+.btn-icon-sm:active { background:var(--surface2); }
+
+.empty-hint { text-align:center; padding:36px 16px; color:var(--muted); font-size:13.5px; line-height:1.7; }
+
+/* ── Abschlag-Liste (Platzkarte) ── */
+.tee-list { margin-top:8px; display:flex; flex-direction:column; gap:3px; }
+.tee-chip-row { font-family:'Menlo','Courier New',monospace; font-size:11px; color:var(--muted); }
+.tee-chip-name { font-weight:700; color:var(--blue); margin-right:6px; }
+
+/* ── Abschlag-Zeilen (Platzformular) ── */
+.tee-row { border:1.5px solid var(--border); border-radius:10px; padding:12px; margin-bottom:10px; background:var(--surface2); }
+.tee-row-head { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+.tee-row-head input[type=text] {
+  flex:1; background:#ffffff; border:1.5px solid var(--border); border-radius:8px; padding:9px 10px;
+  font-family:'Georgia',serif; font-weight:bold; font-size:14px; color:var(--text); outline:none;
+}
+.tee-row-head input[type=text]:focus { border-color:var(--blue2); }
+.tee-remove-btn {
+  width:30px; height:30px; flex-shrink:0; border-radius:8px; border:1.5px solid rgba(192,57,43,.3);
+  background:#ffffff; color:var(--red); cursor:pointer; font-size:13px; -webkit-tap-highlight-color:transparent;
+}
+.tee-par-field { margin-bottom:10px; }
+.tee-par-field label, .tee-gender-label {
+  display:block; font-size:10.5px; color:var(--muted); font-weight:600; text-transform:uppercase;
+  letter-spacing:.5px; margin-bottom:4px;
+}
+.tee-par-field input {
+  width:100%; background:#ffffff; border:1.5px solid var(--border); border-radius:8px; padding:8px 10px;
+  font-family:'Menlo','Courier New',monospace; font-size:14px; outline:none;
+}
+.tee-gender-grid { display:flex; gap:10px; }
+.tee-gender-col { flex:1; }
+.tee-gender-col input {
+  width:100%; background:#ffffff; border:1.5px solid var(--border); border-radius:8px; padding:8px 10px;
+  font-family:'Menlo','Courier New',monospace; font-size:13px; outline:none; margin-bottom:6px;
+}
+.btn-add-tee {
+  width:100%; padding:10px; background:transparent; border:1.5px dashed var(--blue2); border-radius:8px;
+  color:var(--blue); font-family:'Georgia',serif; font-weight:bold; font-size:13px; cursor:pointer; margin-top:2px;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ── Modals (Bottom Sheet, Muster: Tanklog) ── */
+.overlay {
+  position:fixed; inset:0; background:rgba(10,20,40,.55);
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  z-index:200; display:none; align-items:flex-end; justify-content:center;
+}
+.overlay.on { display:flex; animation:bgIn .2s ease; }
+@keyframes bgIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background:var(--surface); border:1px solid var(--border);
+  border-top-left-radius:20px; border-top-right-radius:20px;
+  padding:10px 20px 40px; width:100%; max-width:480px;
+  animation:sheetUp .25s cubic-bezier(.34,1.26,.64,1);
+}
+@keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
+.modal-handle { width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 20px; }
+.modal-title { font-family:'Georgia',serif; font-weight:bold; font-size:20px; margin-bottom:8px; color:var(--blue); }
+.modal-txt { font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.6; }
+.modal-acts { display:flex; gap:10px; }
+.mform { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.btn-cancel {
+  flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--rs);
+  color:var(--muted); font-size:15px; padding:13px; cursor:pointer; font-family:-apple-system,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-del-confirm {
+  flex:1; background:var(--red); border:none; border-radius:var(--rs); color:#ffffff;
+  font-family:'Georgia',serif; font-weight:bold; font-size:16px; letter-spacing:.5px;
+  padding:13px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.btn-save-confirm {
+  flex:1; background:var(--orange); border:none; border-radius:var(--rs); color:#ffffff;
+  font-family:'Georgia',serif; font-weight:bold; font-size:16px; letter-spacing:.5px;
+  padding:13px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+
+/* ── Toast ── */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+  background:var(--text); color:#ffffff; border-radius:99px; padding:9px 20px; font-size:12px;
+  transition:transform .28s cubic-bezier(.34,1.4,.64,1); z-index:500; white-space:nowrap; pointer-events:none;
+}
+.toast.on { transform:translateX(-50%) translateY(0); }
+.toast.ok { background:var(--green); }
+.toast.err { background:var(--red); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">HCPheute</div>
+    <div class="subtitle">Vergleichs-Handicap · WHS Rule 5.2a / 5.1b</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-calc" onclick="showView('calc')">Berechnung</button>
+    <button class="tab" id="tab-courses" onclick="showView('courses')">Plätze</button>
+  </div>
+
+  <div id="content">
+
+    <!-- ── Berechnung ── -->
+    <div class="view active" id="view-calc">
+      <div class="card">
+        <div class="card-title">Neue Berechnung</div>
+
+        <div class="field">
+          <label for="calcCourse">Platz</label>
+          <select id="calcCourse" onchange="onCourseChange()"></select>
+          <div class="field-hint" id="courseHint"></div>
+        </div>
+
+        <div class="field" id="teeField" style="display:none">
+          <label for="calcTee">Abschlag</label>
+          <select id="calcTee" onchange="onTeeChange()"></select>
+          <div class="field-hint" id="teeInfoHint"></div>
+        </div>
+
+        <div id="calcGenderWrap"></div>
+
+        <div class="field">
+          <label for="calcStrokes">Schlägeanzahl (Brutto)</label>
+          <input type="number" id="calcStrokes" inputmode="numeric" min="1" placeholder="z. B. 94">
+        </div>
+
+        <div class="field" id="hcpiField" style="display:none">
+          <label for="calcHCPI">Aktuelles HCPI (optional)</label>
+          <input type="number" id="calcHCPI" step="0.1" placeholder="leer = spielerunabhängig">
+          <div class="field-hint">Leer lassen: die ungespielte Neun wird wie bei 18-Loch-Runden als identisch angenommen (spielerunabhängig, Rule 5.2a-Prinzip). Trägst du dein aktuelles HCPI ein, wird die ungespielte Neun stattdessen nach der offiziellen WHS-Formel (Rule 5.1b) geschätzt — dann hängt das Ergebnis vom eigenen Handicap ab.</div>
+        </div>
+
+        <button class="btn-main" onclick="doCalc()">Berechnen</button>
+
+        <div class="result-box" id="resultBox">
+          <div class="result-label">HCPheute-Wert</div>
+          <div><span class="result-value" id="resultValue">–</span><span class="result-unit">Vergleichs-Handicap</span></div>
+          <div class="calc-steps" id="calcSteps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Plätze ── -->
+    <div class="view" id="view-courses">
+      <button class="btn-main" onclick="openAddCourse()">+ Platz hinzufügen</button>
+      <div style="margin-top:16px" id="courseList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal: Platz hinzufügen/bearbeiten -->
+<div class="overlay" id="courseFormOverlay" onclick="closeOverlayOnBg(event,'courseFormOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="courseFormTitle">Platz hinzufügen</div>
+    <div class="mform">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="cfName" placeholder="z. B. Golfclub Musterstadt">
+      </div>
+      <div class="field">
+        <label>Löcher</label>
+        <div class="radio-group">
+          <label><input type="radio" name="cfHoles" value="18" checked> 18 Loch</label>
+          <label><input type="radio" name="cfHoles" value="9"> 9 Loch</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Abschläge</label>
+        <div id="cfTeesContainer"></div>
+        <button type="button" class="btn-add-tee" onclick="addTeeRow()">+ Abschlag hinzufügen</button>
+      </div>
+    </div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeOverlay('courseFormOverlay')">Abbrechen</button>
+      <button class="btn-save-confirm" onclick="saveCourse()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Platz löschen bestätigen -->
+<div class="overlay" id="delCourseOverlay" onclick="closeOverlayOnBg(event,'delCourseOverlay')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Platz löschen?</div>
+    <div class="modal-txt" id="delCourseTxt">Dieser Platz wird unwiderruflich gelöscht.</div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeOverlay('delCourseOverlay')">Abbrechen</button>
+      <button class="btn-del-confirm" onclick="confirmDeleteCourse()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Speicher (JSONBin.io) ──────────────────────────────────────────────
+   Gleicher JSONBin-Account wie Tanklog, aber eigener Bin für HCPheute.
+   Storage-Abstraktion identisch zu Tanklog: JSONBin -> window.storage
+   (Claude-Artifact-Umgebung) -> localStorage als Fallback.
+────────────────────────────────────────────────────────────────────── */
+const CONFIG = {
+  MASTER_KEY: '$2a$10$Xodn.77unEuE/8Hgvn6RROTqm1Tno52sK8krT91IRliTXeXZoyI5W',
+  BIN_ID:     '6a52ba8ff5f4af5e298230f3',
+};
+
+const _hasClaudeStorage = (() => { try { return typeof window.storage?.get==='function'; } catch { return false; } })();
+const _useJsonBin = !_hasClaudeStorage && !!CONFIG.MASTER_KEY;
+const _JBBASE = 'https://api.jsonbin.io/v3/b';
+let _jbCache = null;
+
+async function _jbRead() {
+  if (_jbCache) return _jbCache;
+  if (!CONFIG.BIN_ID) CONFIG.BIN_ID = localStorage.getItem('hcpheute_bin_id') || '';
+  if (!CONFIG.BIN_ID) return {};
+  try {
+    const r = await fetch(`${_JBBASE}/${CONFIG.BIN_ID}/latest`, { headers:{'X-Master-Key':CONFIG.MASTER_KEY} });
+    _jbCache = (await r.json()).record || {};
+  } catch { _jbCache = {}; }
+  return _jbCache;
+}
+
+async function _jbWrite(data) {
+  _jbCache = data;
+  if (!CONFIG.BIN_ID) {
+    try {
+      const r = await fetch(_JBBASE, {
+        method:'POST',
+        headers:{'X-Master-Key':CONFIG.MASTER_KEY,'Content-Type':'application/json','X-Bin-Name':'HCPheute','X-Bin-Private':'true'},
+        body: JSON.stringify(data)
+      });
+      CONFIG.BIN_ID = (await r.json()).metadata.id;
+      localStorage.setItem('hcpheute_bin_id', CONFIG.BIN_ID);
+      alert('Bin erstellt!\nBIN_ID: ' + CONFIG.BIN_ID + '\nBitte in index.html bei CONFIG.BIN_ID eintragen.');
+    } catch(e) { console.error('JSONBin create:', e); }
+    return;
+  }
+  try {
+    await fetch(`${_JBBASE}/${CONFIG.BIN_ID}`, {
+      method:'PUT',
+      headers:{'X-Master-Key':CONFIG.MASTER_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.error('JSONBin write:', e); }
+}
+
+async function sLoadCourses() {
+  if (_hasClaudeStorage) { try { const r = await window.storage.get('courses', true); return r ? JSON.parse(r.value) : []; } catch { return []; } }
+  if (_useJsonBin) { const db = await _jbRead(); return db.courses || []; }
+  try { return JSON.parse(localStorage.getItem('courses') || '[]'); } catch { return []; }
+}
+
+async function sSaveCourses(courses) {
+  if (_hasClaudeStorage) { try { await window.storage.set('courses', JSON.stringify(courses), true); } catch {} return; }
+  if (_useJsonBin) { const db = await _jbRead(); db.courses = courses; await _jbWrite(db); return; }
+  localStorage.setItem('courses', JSON.stringify(courses));
+}
+
+/* ── WHS Rule 5.2a: spielerunabhängige Erst-Einstufung ───────────────────
+   Seit der WHS-Reform 2024 wird eine einzelne Runde für Spieler mit
+   bestehendem Handicap zusätzlich mit einem "Expected Score" verrechnet,
+   der vom aktuellen Handicap Index abhängt (Rule 5.1b) — zwei Spieler mit
+   identischer Tagesform bekämen dadurch unterschiedliche Werte. Für die
+   Erst-Einstufung eines neuen Spielers (Rule 5.2a) gibt es diesen Bias
+   nicht: nur die reine Score-Differenzielle plus eine feste, ausschließlich
+   von der angenommenen Turnierzahl abhängige Korrektur. Genau diese Logik
+   nutzt HCPheute, weil sie echte Vergleichbarkeit zwischen verschiedenen
+   Spielern derselben Runde ermöglicht.
+────────────────────────────────────────────────────────────────────── */
+const table = [
+  {min:3,  max:3,  use:1, adj:-2.0, label:'Niedrigste 1'},
+  {min:4,  max:4,  use:1, adj:-1.0, label:'Niedrigste 1'},
+  {min:5,  max:5,  use:1, adj: 0.0, label:'Niedrigste 1'},
+  {min:6,  max:6,  use:2, adj:-1.0, label:'Schnitt der niedrigsten 2'},
+  {min:7,  max:8,  use:2, adj: 0.0, label:'Schnitt der niedrigsten 2'},
+  {min:9,  max:11, use:3, adj: 0.0, label:'Schnitt der niedrigsten 3'},
+  {min:12, max:14, use:4, adj: 0.0, label:'Schnitt der niedrigsten 4'},
+  {min:15, max:16, use:5, adj: 0.0, label:'Schnitt der niedrigsten 5'},
+  {min:17, max:18, use:6, adj: 0.0, label:'Schnitt der niedrigsten 6'},
+  {min:19, max:19, use:7, adj: 0.0, label:'Schnitt der niedrigsten 7'},
+  {min:20, max:20, use:8, adj: 0.0, label:'Schnitt der niedrigsten 8'},
+];
+
+/* WHS rundet auf 1 Nachkommastelle, 0,5 wird aufgerundet (Rule 5.1a) —
+   NICHT trunkieren, das ist das alte USGA-System vor 2020! */
+function roundHalfUp(n) {
+  return Math.sign(n) * Math.round(Math.abs(n) * 10) / 10;
+}
+
+/* ── 9-Loch-Runden: spielerunabhängig per Default, Rule 5.1b nur auf Wunsch ──
+   Zwei Anläufe, ein Fazit (Entscheidungen vom 2026-07-12): Erst wurde die
+   ungespielte Neun grundsätzlich nach der offiziellen WHS-Formel geschätzt
+   (Rule 5.1b, Default HCPI 54 ohne Eingabe) — das erwies sich in der Praxis
+   als genau der Bias, den die App mit Rule 5.2a eigentlich vermeiden soll:
+   zwei Spieler mit identischer Tagesform bekommen dadurch unterschiedliche
+   Ergebnisse, weil nur die ESTIMATE für die ungespielte Neun vom bestehenden
+   Handicap abhängt (die gespielte Neun wird für beide gleich bewertet).
+   Deshalb jetzt: Default = Verdopplung (spielerunabhängig, wie bei 18 Loch).
+   Nur wenn ein eigenes HCPI eingetragen wird, wechselt die Rechnung bewusst
+   auf die regelkonforme, aber handicap-abhängige Rule-5.1b-Schätzung:
+   Expected Score Differential = 0,52 × HCPI + 1,2 (unrundete Werte, erst
+   die Summe mit dem gespielten Differenzial wird gerundet).
+   Quelle der Formel: WHS Rules of Handicapping Rule 5.1b. Über zwei
+   unabhängige Sekundärquellen bestätigt (Reverse-Engineering gegen
+   USGA-Beispiele durch ein nationales Handicap-Committee); der
+   USGA-Originaltext war zum Zeitpunkt der Umsetzung nicht automatisiert
+   abrufbar (Stand 2026-07-12).
+────────────────────────────────────────────────────────────────────── */
+function expectedScoreDifferential(handicapIndex) {
+  return 0.52 * handicapIndex + 1.2;
+}
+
+function calculate({ strokes, courseRating, slopeRating, holes, tournamentCount, currentHCPI }) {
+  const diffRawUnrounded = (strokes - courseRating) * 113 / slopeRating;
+  const diffRaw = roundHalfUp(diffRawUnrounded);
+
+  let diff18, usedHCPI = null;
+  if (holes === 9) {
+    if (typeof currentHCPI === 'number' && !isNaN(currentHCPI)) {
+      usedHCPI = currentHCPI;
+      // Unrundete Werte addieren, erst die Summe runden (Rule 5.1b).
+      diff18 = roundHalfUp(diffRawUnrounded + expectedScoreDifferential(usedHCPI));
+    } else {
+      // Kein HCPI eingetragen -> spielerunabhängig: ungespielte Neun als
+      // identisch angenommen (gleiches Prinzip wie die Rule-5.2a-Logik).
+      diff18 = roundHalfUp(diffRaw * 2);
+    }
+  } else {
+    diff18 = diffRaw;
+  }
+
+  const clamped = Math.min(Math.max(tournamentCount, 3), 20);
+  const row = table.find(r => clamped >= r.min && clamped <= r.max);
+
+  // Alle N Turniere identisch angenommen -> "niedrigste k" Durchschnitt
+  // entspricht dem einzelnen Differenzial-Wert.
+  const handicapIndex = roundHalfUp(diff18 + row.adj);
+
+  return { diffRaw, diff18, tableRow: row, handicapIndex, usedHCPI };
+}
+
+/* ── Zustand ── */
+let COURSES = [];
+let editingCourseId = null;
+let pendingDeleteCourseId = null;
+let editingTees = [];
+
+/* ── Ansichten ── */
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+/* ── Berechnung ── */
+function renderCourseSelect() {
+  const sel = document.getElementById('calcCourse');
+  const prevVal = sel.value;
+  if (COURSES.length === 0) {
+    sel.innerHTML = '<option value="">Keine Plätze angelegt</option>';
+    document.getElementById('courseHint').textContent = 'Bitte zuerst unter "Plätze" einen Platz anlegen.';
+    document.getElementById('teeField').style.display = 'none';
+    document.getElementById('hcpiField').style.display = 'none';
+    renderGenderOptions(null);
+    return;
+  }
+  sel.innerHTML = '<option value="">-- Platz wählen --</option>' +
+    COURSES.map(c => `<option value="${c.id}">${escapeHtml(c.name)} (${c.holes} Loch)</option>`).join('');
+  if (prevVal && COURSES.some(c => c.id === prevVal)) sel.value = prevVal;
+  onCourseChange();
+}
+
+function onCourseChange() {
+  const sel = document.getElementById('calcCourse');
+  const hint = document.getElementById('courseHint');
+  const teeField = document.getElementById('teeField');
+  const hcpiField = document.getElementById('hcpiField');
+  const course = COURSES.find(x => x.id === sel.value);
+
+  if (!course) {
+    hint.textContent = COURSES.length ? '' : 'Bitte zuerst unter "Plätze" einen Platz anlegen.';
+    teeField.style.display = 'none';
+    hcpiField.style.display = 'none';
+    renderGenderOptions(null);
+    return;
+  }
+
+  teeField.style.display = '';
+  const teeSel = document.getElementById('calcTee');
+  const prevTee = teeSel.value;
+  teeSel.innerHTML = course.tees.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (Par ${t.par})</option>`).join('');
+  if (prevTee && course.tees.some(t => t.id === prevTee)) teeSel.value = prevTee;
+  onTeeChange();
+
+  hint.textContent = course.holes === 9
+    ? 'Hinweis: 9-Loch-Platz — die ungespielte Neun wird nach Rule 5.1b (Expected Score) geschätzt, siehe Feld unten.'
+    : '';
+  hcpiField.style.display = course.holes === 9 ? '' : 'none';
+}
+
+function onTeeChange() {
+  const course = COURSES.find(x => x.id === document.getElementById('calcCourse').value);
+  if (!course) { renderGenderOptions(null); return; }
+  const tee = course.tees.find(t => t.id === document.getElementById('calcTee').value);
+  renderGenderOptions(tee);
+}
+
+// Beide Geschlechter gleichrangig behandeln: welche tatsächlich erfasst
+// sind, entscheidet allein, was zur Auswahl steht — keine Vorrangregel.
+function getTeeGenders(tee) {
+  const genders = [];
+  if (tee.herren) genders.push('herren');
+  if (tee.damen) genders.push('damen');
+  return genders;
+}
+
+function resolveGender(tee) {
+  const genders = getTeeGenders(tee);
+  const genderInput = document.querySelector('input[name=calcGender]:checked');
+  if (genderInput && genders.includes(genderInput.value)) return genderInput.value;
+  return genders[0];
+}
+
+function renderGenderOptions(tee) {
+  const wrap = document.getElementById('calcGenderWrap');
+  if (!tee) { wrap.innerHTML = ''; updateTeeInfoHint(); return; }
+  const genders = getTeeGenders(tee);
+  wrap.innerHTML = genders.length === 2 ? `
+    <div class="field">
+      <label>Geschlecht</label>
+      <div class="radio-group">
+        <label><input type="radio" name="calcGender" value="herren" checked onchange="updateTeeInfoHint()"> Herren</label>
+        <label><input type="radio" name="calcGender" value="damen" onchange="updateTeeInfoHint()"> Damen</label>
+      </div>
+    </div>` : '';
+  updateTeeInfoHint();
+}
+
+function updateTeeInfoHint() {
+  const hintEl = document.getElementById('teeInfoHint');
+  const course = COURSES.find(x => x.id === document.getElementById('calcCourse').value);
+  const tee = course ? course.tees.find(t => t.id === document.getElementById('calcTee').value) : null;
+  if (!tee) { hintEl.textContent = ''; return; }
+  const data = tee[resolveGender(tee)];
+  hintEl.textContent = `CR ${data.courseRating.toFixed(1)} / Slope ${data.slopeRating} (Par ${tee.par})`;
+}
+
+// Feste Annahme (Rule 5.2a): so tun, als wäre der Spieler vor 8 Tagen mit der
+// Platzreife auf die Welt gekommen und hätte seitdem jeden Tag exakt dasselbe
+// Ergebnis auf demselben Platz gespielt. Deshalb keine Eingabe nötig — immer 8.
+const TOURNAMENT_COUNT = 8;
+
+function doCalc() {
+  const course = COURSES.find(c => c.id === document.getElementById('calcCourse').value);
+  if (!course) { showToast('Bitte zuerst einen Platz wählen.', 'err'); return; }
+
+  const tee = course.tees.find(t => t.id === document.getElementById('calcTee').value);
+  if (!tee) { showToast('Bitte einen Abschlag wählen.', 'err'); return; }
+
+  const genderData = tee[resolveGender(tee)];
+
+  const strokes = parseInt(document.getElementById('calcStrokes').value, 10);
+  if (!strokes || strokes < 1) { showToast('Bitte eine gültige Schlägeanzahl eingeben.', 'err'); return; }
+
+  let currentHCPI = null;
+  if (course.holes === 9) {
+    const raw = document.getElementById('calcHCPI').value.trim();
+    if (raw !== '') {
+      const parsed = parseFloat(raw);
+      if (isNaN(parsed)) { showToast('Bitte ein gültiges HCPI eingeben oder das Feld leer lassen.', 'err'); return; }
+      currentHCPI = parsed;
+    }
+  }
+
+  const result = calculate({
+    strokes, courseRating: genderData.courseRating, slopeRating: genderData.slopeRating,
+    holes: course.holes, tournamentCount: TOURNAMENT_COUNT, currentHCPI
+  });
+
+  document.getElementById('resultValue').textContent = result.handicapIndex.toFixed(1);
+
+  const steps = [['Score-Differenzial gespielte Runde (roh)', result.diffRaw.toFixed(1)]];
+  if (course.holes === 9) {
+    if (result.usedHCPI !== null) {
+      steps.push([`Erwartetes Differenzial ungespielte Neun (HCPI ${result.usedHCPI.toFixed(1)})`, expectedScoreDifferential(result.usedHCPI).toFixed(1)]);
+    } else {
+      steps.push(['Ungespielte Neun (spielerunabhängig, identisch angenommen)', result.diffRaw.toFixed(1)]);
+    }
+    steps.push(['18-Loch-Äquivalent', result.diff18.toFixed(1)]);
+  }
+  steps.push([`8 Tage gleiches Ergebnis → ${result.tableRow.label}`, (result.tableRow.adj >= 0 ? '+' : '') + result.tableRow.adj.toFixed(1)]);
+  steps.push(['HCPheute-Wert', result.handicapIndex.toFixed(1)]);
+
+  document.getElementById('calcSteps').innerHTML = steps.map(([label, val]) =>
+    `<div class="calc-step"><span class="calc-step-label">${label}</span><span class="calc-step-value">${val}</span></div>`
+  ).join('');
+
+  document.getElementById('resultBox').classList.add('show');
+}
+
+/* ── Platzverwaltung ── */
+function renderCourseList() {
+  const el = document.getElementById('courseList');
+  if (COURSES.length === 0) {
+    el.innerHTML = '<div class="empty-hint">Noch keine Plätze angelegt.<br>Mit "+ Platz hinzufügen" den ersten Platz erfassen.</div>';
+    return;
+  }
+  el.innerHTML = COURSES.map(c => `
+    <div class="course-item">
+      <div style="flex:1">
+        <div class="course-info-name">${escapeHtml(c.name)}</div>
+        <div class="course-info-meta">${c.holes} Loch</div>
+        <div class="tee-list">
+          ${c.tees.map(t => {
+            const parts = [];
+            if (t.herren) parts.push(`Herren CR ${t.herren.courseRating.toFixed(1)}/${t.herren.slopeRating}`);
+            if (t.damen) parts.push(`Damen CR ${t.damen.courseRating.toFixed(1)}/${t.damen.slopeRating}`);
+            return `
+            <div class="tee-chip-row">
+              <span class="tee-chip-name">${escapeHtml(t.name)}</span>
+              <span>Par ${t.par} · ${parts.join(' · ')}</span>
+            </div>
+          `;
+          }).join('')}
+        </div>
+      </div>
+      <div class="course-acts">
+        <button class="btn-icon-sm" onclick="openEditCourse('${c.id}')" title="Bearbeiten">✏</button>
+        <button class="btn-icon-sm del" onclick="openDeleteCourse('${c.id}')" title="Löschen">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function makeEmptyTee() {
+  return { id: 'tee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: '', par: '', herrenCR: '', herrenSlope: '', damenCR: '', damenSlope: '' };
+}
+
+function renderTeeRows() {
+  document.getElementById('cfTeesContainer').innerHTML = editingTees.map((t, i) => `
+    <div class="tee-row">
+      <div class="tee-row-head">
+        <input type="text" placeholder="Abschlag, z. B. Gelb" value="${escapeHtml(t.name)}" oninput="updateTeeField(${i},'name',this.value)">
+        ${editingTees.length > 1 ? `<button type="button" class="tee-remove-btn" onclick="removeTeeRow(${i})">✕</button>` : ''}
+      </div>
+      <div class="tee-par-field">
+        <label>Par</label>
+        <input type="number" step="1" value="${t.par}" oninput="updateTeeField(${i},'par',this.value)">
+      </div>
+      <div class="tee-gender-grid">
+        <div class="tee-gender-col">
+          <div class="tee-gender-label">Herren (CR / Slope)</div>
+          <input type="number" step="0.1" placeholder="CR" value="${t.herrenCR}" oninput="updateTeeField(${i},'herrenCR',this.value)">
+          <input type="number" step="1" placeholder="Slope" value="${t.herrenSlope}" oninput="updateTeeField(${i},'herrenSlope',this.value)">
+        </div>
+        <div class="tee-gender-col">
+          <div class="tee-gender-label">Damen (CR / Slope)</div>
+          <input type="number" step="0.1" placeholder="CR" value="${t.damenCR}" oninput="updateTeeField(${i},'damenCR',this.value)">
+          <input type="number" step="1" placeholder="Slope" value="${t.damenSlope}" oninput="updateTeeField(${i},'damenSlope',this.value)">
+        </div>
+      </div>
+      <div class="field-hint">Mindestens ein vollständiger Wertesatz (Herren oder Damen) ist erforderlich — beide dürfen ausgefüllt werden.</div>
+    </div>
+  `).join('');
+}
+
+function updateTeeField(i, field, value) { editingTees[i][field] = value; }
+
+function addTeeRow() { editingTees.push(makeEmptyTee()); renderTeeRows(); }
+
+function removeTeeRow(i) {
+  if (editingTees.length <= 1) { showToast('Mindestens ein Abschlag ist erforderlich.', 'err'); return; }
+  editingTees.splice(i, 1);
+  renderTeeRows();
+}
+
+function openAddCourse() {
+  editingCourseId = null;
+  document.getElementById('courseFormTitle').textContent = 'Platz hinzufügen';
+  document.getElementById('cfName').value = '';
+  document.querySelector('input[name=cfHoles][value="18"]').checked = true;
+  editingTees = [makeEmptyTee()];
+  renderTeeRows();
+  openOverlay('courseFormOverlay');
+}
+
+function openEditCourse(id) {
+  const c = COURSES.find(x => x.id === id);
+  if (!c) return;
+  editingCourseId = id;
+  document.getElementById('courseFormTitle').textContent = 'Platz bearbeiten';
+  document.getElementById('cfName').value = c.name;
+  document.querySelector(`input[name=cfHoles][value="${c.holes}"]`).checked = true;
+  editingTees = c.tees.map(t => ({
+    id: t.id, name: t.name, par: t.par,
+    herrenCR: t.herren ? t.herren.courseRating : '', herrenSlope: t.herren ? t.herren.slopeRating : '',
+    damenCR: t.damen ? t.damen.courseRating : '', damenSlope: t.damen ? t.damen.slopeRating : ''
+  }));
+  renderTeeRows();
+  openOverlay('courseFormOverlay');
+}
+
+async function saveCourse() {
+  const name = document.getElementById('cfName').value.trim();
+  const holes = parseInt(document.querySelector('input[name=cfHoles]:checked').value, 10);
+
+  if (!name) { showToast('Bitte einen Namen eingeben.', 'err'); return; }
+
+  // Liest ein Geschlecht-Wertepaar; wirft (via Rückgabe null + Fehler-Toast)
+  // nur, wenn GENAU eines der beiden Felder ausgefüllt ist (unvollständig).
+  // Beide leer -> null (dieses Geschlecht schlicht nicht erfasst).
+  function readGenderPair(crRaw, slopeRaw, label, teeName) {
+    const crStr = String(crRaw ?? '').trim();
+    const slopeStr = String(slopeRaw ?? '').trim();
+    if (crStr === '' && slopeStr === '') return { value: null, ok: true };
+    const cr = parseFloat(crStr);
+    const slope = parseInt(slopeStr, 10);
+    if (!cr || cr <= 0 || !slope || slope <= 0) {
+      showToast(`${label}-Werte für "${teeName}" bitte vollständig oder gar nicht ausfüllen.`, 'err');
+      return { value: null, ok: false };
+    }
+    return { value: { courseRating: cr, slopeRating: slope }, ok: true };
+  }
+
+  const tees = [];
+  for (const t of editingTees) {
+    const teeName = (t.name || '').trim();
+    const par = parseInt(t.par, 10);
+
+    if (!teeName) { showToast('Bitte für jeden Abschlag einen Namen eingeben.', 'err'); return; }
+    if (!par || par <= 0) { showToast(`Bitte ein gültiges Par für "${teeName}" eingeben.`, 'err'); return; }
+
+    const herrenResult = readGenderPair(t.herrenCR, t.herrenSlope, 'Herren', teeName);
+    if (!herrenResult.ok) return;
+    const damenResult = readGenderPair(t.damenCR, t.damenSlope, 'Damen', teeName);
+    if (!damenResult.ok) return;
+
+    if (!herrenResult.value && !damenResult.value) {
+      showToast(`Bitte für "${teeName}" mindestens Herren- oder Damen-Werte eingeben.`, 'err');
+      return;
+    }
+
+    tees.push({ id: t.id, name: teeName, par, herren: herrenResult.value, damen: damenResult.value });
+  }
+
+  if (editingCourseId) {
+    const c = COURSES.find(x => x.id === editingCourseId);
+    Object.assign(c, { name, holes, tees });
+  } else {
+    COURSES.push({
+      id: 'course_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      name, holes, tees,
+      createdAt: new Date().toISOString()
+    });
+  }
+  await sSaveCourses(COURSES);
+  renderCourseList();
+  renderCourseSelect();
+  closeOverlay('courseFormOverlay');
+  showToast('Platz gespeichert.', 'ok');
+}
+
+function openDeleteCourse(id) {
+  const c = COURSES.find(x => x.id === id);
+  if (!c) return;
+  pendingDeleteCourseId = id;
+  document.getElementById('delCourseTxt').textContent = `"${c.name}" wird unwiderruflich gelöscht.`;
+  openOverlay('delCourseOverlay');
+}
+
+async function confirmDeleteCourse() {
+  COURSES = COURSES.filter(c => c.id !== pendingDeleteCourseId);
+  pendingDeleteCourseId = null;
+  await sSaveCourses(COURSES);
+  renderCourseList();
+  renderCourseSelect();
+  closeOverlay('delCourseOverlay');
+  showToast('Platz gelöscht.', 'ok');
+}
+
+/* ── Overlay / Toast Helfer ── */
+function openOverlay(id) { document.getElementById(id).classList.add('on'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('on'); }
+function closeOverlayOnBg(e, id) { if (e.target.id === id) closeOverlay(id); }
+
+let _toastTimer = null;
+function showToast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (kind ? ' ' + kind : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ── Migration: altes flaches Format (ein CR/Slope/Par pro Platz) auf
+   das neue Abschlag-Format (tees-Array mit Herren/Damen) heben. ── */
+function migrateLegacyCourse(c) {
+  return {
+    id: c.id,
+    name: c.name,
+    holes: c.holes,
+    tees: [{
+      id: 'tee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: 'Standard',
+      par: c.par,
+      herren: { courseRating: c.courseRating, slopeRating: c.slopeRating },
+      damen: null
+    }],
+    createdAt: c.createdAt
+  };
+}
+
+/* ── Start ── */
+async function init() {
+  const loaded = await sLoadCourses();
+  let migrated = false;
+  COURSES = loaded.map(c => {
+    if (Array.isArray(c.tees)) return c;
+    migrated = true;
+    return migrateLegacyCourse(c);
+  });
+  if (migrated) {
+    await sSaveCourses(COURSES);
+    showToast('Bestehende Plätze auf Abschlag-Format migriert.', 'ok');
+  }
+  renderCourseList();
+  renderCourseSelect();
+}
+init();
+</script>
+</body>
+</html>
