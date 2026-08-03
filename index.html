@@ -373,23 +373,29 @@ header {
    Gleicher JSONBin-Account wie Tanklog, aber eigener Bin für HCPheute.
    Storage-Abstraktion identisch zu Tanklog: JSONBin -> window.storage
    (Claude-Artifact-Umgebung) -> localStorage als Fallback.
+
+   Nutzt einen auf Read+Update beschränkten Access Key statt des
+   Account-weiten Master Keys (Entscheidung vom 2026-08, nachdem der
+   urspruengliche, oeffentlich in diesem Repo sichtbare Master Key
+   rotiert wurde und HCPheute dadurch offline war). Kann Bins weder
+   anlegen noch loeschen -- BIN_ID ist daher fest einzutragen, keine
+   Auto-Erstellung mehr moeglich.
 ────────────────────────────────────────────────────────────────────── */
 const CONFIG = {
-  MASTER_KEY: '$2a$10$Xodn.77unEuE/8Hgvn6RROTqm1Tno52sK8krT91IRliTXeXZoyI5W',
+  ACCESS_KEY: '$2a$10$KovQIDGRMKcqh5oC12EP3./rFf6TjGX2Bx.IcIRjzoomdVfpdNO7u',
   BIN_ID:     '6a52ba8ff5f4af5e298230f3',
 };
 
 const _hasClaudeStorage = (() => { try { return typeof window.storage?.get==='function'; } catch { return false; } })();
-const _useJsonBin = !_hasClaudeStorage && !!CONFIG.MASTER_KEY;
+const _useJsonBin = !_hasClaudeStorage && !!CONFIG.ACCESS_KEY;
 const _JBBASE = 'https://api.jsonbin.io/v3/b';
 let _jbCache = null;
 
 async function _jbRead() {
   if (_jbCache) return _jbCache;
-  if (!CONFIG.BIN_ID) CONFIG.BIN_ID = localStorage.getItem('hcpheute_bin_id') || '';
   if (!CONFIG.BIN_ID) return {};
   try {
-    const r = await fetch(`${_JBBASE}/${CONFIG.BIN_ID}/latest`, { headers:{'X-Master-Key':CONFIG.MASTER_KEY} });
+    const r = await fetch(`${_JBBASE}/${CONFIG.BIN_ID}/latest`, { headers:{'X-Access-Key':CONFIG.ACCESS_KEY} });
     _jbCache = (await r.json()).record || {};
   } catch { _jbCache = {}; }
   return _jbCache;
@@ -398,22 +404,13 @@ async function _jbRead() {
 async function _jbWrite(data) {
   _jbCache = data;
   if (!CONFIG.BIN_ID) {
-    try {
-      const r = await fetch(_JBBASE, {
-        method:'POST',
-        headers:{'X-Master-Key':CONFIG.MASTER_KEY,'Content-Type':'application/json','X-Bin-Name':'HCPheute','X-Bin-Private':'true'},
-        body: JSON.stringify(data)
-      });
-      CONFIG.BIN_ID = (await r.json()).metadata.id;
-      localStorage.setItem('hcpheute_bin_id', CONFIG.BIN_ID);
-      alert('Bin erstellt!\nBIN_ID: ' + CONFIG.BIN_ID + '\nBitte in index.html bei CONFIG.BIN_ID eintragen.');
-    } catch(e) { console.error('JSONBin create:', e); }
+    console.error('JSONBin: keine BIN_ID gesetzt -- Access Key kann keine neuen Bins anlegen.');
     return;
   }
   try {
     await fetch(`${_JBBASE}/${CONFIG.BIN_ID}`, {
       method:'PUT',
-      headers:{'X-Master-Key':CONFIG.MASTER_KEY,'Content-Type':'application/json'},
+      headers:{'X-Access-Key':CONFIG.ACCESS_KEY,'Content-Type':'application/json'},
       body: JSON.stringify(data)
     });
   } catch(e) { console.error('JSONBin write:', e); }
@@ -694,7 +691,7 @@ function renderCourseList() {
             return `
             <div class="tee-chip-row">
               <span class="tee-chip-name">${escapeHtml(t.name)}</span>
-              <span>Par ${t.par} · ${parts.join(' · ')}</span>
+              <span>Par ${escapeHtml(t.par)} · ${escapeHtml(parts.join(' · '))}</span>
             </div>
           `;
           }).join('')}
@@ -722,18 +719,18 @@ function renderTeeRows() {
       </div>
       <div class="tee-par-field">
         <label>Par</label>
-        <input type="number" step="1" value="${t.par}" oninput="updateTeeField(${i},'par',this.value)">
+        <input type="number" step="1" value="${escapeHtml(t.par)}" oninput="updateTeeField(${i},'par',this.value)">
       </div>
       <div class="tee-gender-grid">
         <div class="tee-gender-col">
           <div class="tee-gender-label">Herren (CR / Slope)</div>
-          <input type="number" step="0.1" placeholder="CR" value="${t.herrenCR}" oninput="updateTeeField(${i},'herrenCR',this.value)">
-          <input type="number" step="1" placeholder="Slope" value="${t.herrenSlope}" oninput="updateTeeField(${i},'herrenSlope',this.value)">
+          <input type="number" step="0.1" placeholder="CR" value="${escapeHtml(t.herrenCR)}" oninput="updateTeeField(${i},'herrenCR',this.value)">
+          <input type="number" step="1" placeholder="Slope" value="${escapeHtml(t.herrenSlope)}" oninput="updateTeeField(${i},'herrenSlope',this.value)">
         </div>
         <div class="tee-gender-col">
           <div class="tee-gender-label">Damen (CR / Slope)</div>
-          <input type="number" step="0.1" placeholder="CR" value="${t.damenCR}" oninput="updateTeeField(${i},'damenCR',this.value)">
-          <input type="number" step="1" placeholder="Slope" value="${t.damenSlope}" oninput="updateTeeField(${i},'damenSlope',this.value)">
+          <input type="number" step="0.1" placeholder="CR" value="${escapeHtml(t.damenCR)}" oninput="updateTeeField(${i},'damenCR',this.value)">
+          <input type="number" step="1" placeholder="Slope" value="${escapeHtml(t.damenSlope)}" oninput="updateTeeField(${i},'damenSlope',this.value)">
         </div>
       </div>
       <div class="field-hint">Mindestens ein vollständiger Wertesatz (Herren oder Damen) ist erforderlich — beide dürfen ausgefüllt werden.</div>
