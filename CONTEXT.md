@@ -151,6 +151,61 @@ USGA-Beispiele durch ein nationales Handicap-Committee); der
 USGA-Originaltext war zum Zeitpunkt der Umsetzung nicht automatisiert
 abrufbar (403) — bei Zweifel gegen eine Primärquelle nachprüfen.
 
+### Validierung gegen DGV-Produktivdaten (2026-08-09)
+
+Die Berechnung wurde gegen zwölf reale Runden aus dem detaillierten
+Scoring-Record-Export des DGV geprüft (Spieler HB, GolfRange Nürnberg, Abschlag
+gelb; 18 Loch: Par 68, CR 66,6, Slope 125 — 9 Loch: Par 34, CR 33,3, Slope 124).
+Alle zwölf stimmen exakt überein. Damit ist insbesondere die 0.52/1.2-Formel aus
+Rule 5.1b nicht mehr nur über Sekundärquellen belegt, sondern gegen die
+Produktivrechnung eines nationalen Verbandes verifiziert.
+
+**Methodischer Hinweis:** golf.de weist den SD *inklusive* aller
+Exceptional-Score-Anpassungen aus, HCPheute berechnet den Rohwert. Die
+Spalte "golf.de (roh)" ist deshalb zurückgerechnet: angezeigter Wert + 1 für
+Runden nach dem 21.06.2025, + 2 für ältere (zwei ExSc-Ereignisse: 21.06.2025
+und 08.08.2026, beide je −1, jeweils rückwirkend auf alle Einträge der
+Scoring Record).
+
+#### 18 Loch — Rule 5.1a, handicap-unabhängig
+
+Rechenweg: `(GBE − 66,6) × 113 / 125`, gerundet nach `roundHalfUp`.
+
+| Datum | GBE | Berechnet | golf.de (roh) | golf.de (angezeigt) |
+|---|---|---|---|---|
+| 08.08.2026 | 99 | 29,2896 → **29,3** | 29,3 | 28,3 |
+| 14.06.2026 | 109 | 38,3296 → **38,3** | 38,3 | 37,3 |
+| 07.06.2026 | 114 | 42,8496 → **42,8** | 42,8 | 41,8 |
+| 13.09.2025 | 113 | 41,9456 → **41,9** | 41,9 | 40,9 |
+| 21.06.2025 | 104 | 33,8096 → **33,8** | 33,8 | 31,8 |
+
+#### 9 Loch — Rule 5.1b, Expected Score Differential
+
+Rechenweg: `(GBE − 33,3) × 113 / 124 + (0,52 × HCPI + 1,2)`, unrundet addiert,
+erst die Summe nach `roundHalfUp` gerundet — exakt wie in `calculate()`
+implementiert.
+
+| Datum | GBE | HCPI | Gespielt | Erwartet | Summe | golf.de (roh) |
+|---|---|---|---|---|---|---|
+| 02.08.2026 | 56 | 39,0 | 20,6863 | 21,480 | 42,1663 → **42,2** | 42,2 |
+| 11.07.2026 | 52 | 39,0 | 17,0411 | 21,480 | 38,5211 → **38,5** | 38,5 |
+| 18.04.2026 | 51 | 39,4 | 16,1298 | 21,688 | 37,8178 → **37,8** | 37,8 |
+| 12.10.2025 | 53 | 39,5 | 17,9524 | 21,740 | 39,6924 → **39,7** | 39,7 |
+| 14.06.2025 | 55 | 43,7 | 19,7750 | 23,924 | 43,6990 → **43,7** | 43,7 |
+| 04.05.2025 | 55 | 44,3 | 19,7750 | 24,236 | 44,0110 → **44,0** | 44,0 |
+| 19.04.2025 | 53 | 45,0 | 17,9524 | 24,600 | 42,5524 → **42,6** | 42,6 |
+
+Bemerkenswert: Der DGV rechnet 9-Loch-Runden nach Rule 5.1b. Der in HCPheute
+optionale, handicap-abhängige Modus (HCPI-Feld ausgefüllt) ist damit derjenige,
+der den offiziellen Wert reproduziert. Der Default (Verdopplung) bleibt richtig
+für den Zweck der App — spielerunabhängige Vergleichbarkeit —, liefert aber
+bewusst nicht den amtlichen Wert.
+
+**Nicht in die Validierung aufgenommen:** Runden vor dem 13.10.2024. Der Export
+weist dort für 9-Loch-Runden bereits auf 18 Löcher hochgerechnete GBE-Werte
+(109–135) neben 9-Loch-CR/Slope aus; mit welcher Bezugsgröße der DGV diese Werte
+gerechnet hat, ließ sich aus dem Export nicht rekonstruieren.
+
 ---
 
 ## Features

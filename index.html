@@ -294,8 +294,9 @@ header {
         <div id="calcGenderWrap"></div>
 
         <div class="field">
-          <label for="calcStrokes">Schlägeanzahl (Brutto)</label>
+          <label for="calcStrokes">Gewertetes Bruttoergebnis</label>
           <input type="number" id="calcStrokes" inputmode="numeric" min="1" placeholder="z. B. 94">
+          <div class="field-hint">Gespielte Schläge nach WHS-Deckelung: pro Loch höchstens Netto-Doppelbogey (Par + 2 + eigene Vorgabenschläge auf diesem Loch). In Scoring Records als "GBE" ausgewiesen. Ohne Deckelung fällt das Ergebnis zu hoch aus.</div>
         </div>
 
         <div class="field" id="hcpiField" style="display:none">
@@ -566,7 +567,7 @@ function onCourseChange() {
   onTeeChange();
 
   hint.textContent = course.holes === 9
-    ? 'Hinweis: 9-Loch-Platz — die ungespielte Neun wird nach Rule 5.1b (Expected Score) geschätzt, siehe Feld unten.'
+    ? 'Hinweis: 9-Loch-Platz — die ungespielte Neun wird als identisch angenommen (spielerunabhängig). Mit eingetragenem HCPI wechselt die Rechnung auf die Schätzung nach Rule 5.1b, siehe Feld unten.'
     : '';
   hcpiField.style.display = course.holes === 9 ? '' : 'none';
 }
