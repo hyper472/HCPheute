@@ -52,20 +52,23 @@ Keine externen Bibliotheken (kein CDN) – nur Systemschriften (Georgia,
 ### Konfiguration (oben in `<script>`)
 ```js
 const CONFIG = {
-  MASTER_KEY: '$2a$10$Xodn...',   // JSONBin Master Key – gleicher Account wie Tanklog
-  BIN_ID:     '6a52ba8f...',      // eigener Bin für HCPheute
+  ACCESS_KEY: '$2a$10$KovQ...',   // JSONBin Access Key – read+update, bin-spezifisch
+  BIN_ID:     '6a52ba8f...',      // fest eingetragen, keine Auto-Erstellung mehr möglich
 };
 ```
 
-**Achtung:** Der Master Key ist Account-weit, nicht Bin-spezifisch. Er wird
-bewusst mit Tanklog geteilt (gleicher JSONBin-Account) – wer den öffentlichen
-Quelltext eines der beiden Repos liest, hat damit auch Zugriff auf den Bin
-des jeweils anderen Projekts. Für zwei private Freizeit-Apps akzeptiertes
-Risiko (Entscheidung vom 2026-07-11).
+**Historie:** Ursprünglich (bis 2026-07) ein Account-weiter Master Key, mit
+Tanklog geteilt – dieser wurde öffentlich im Repo sichtbar, irgendwann
+rotiert, und HCPheute war dadurch offline. Seit 2026-08 stattdessen ein auf
+Read+Update beschränkter, bin-spezifischer Access Key: kann weder neue Bins
+anlegen noch löschen, hat keinen Zugriff auf den Tanklog-Bin. Bleibt zwar
+weiterhin im öffentlichen HTML-Quelltext sichtbar (clientseitiges JS lässt
+sich nicht anders bauen), der Schaden bei erneutem Leak ist aber auf diesen
+einen Bin begrenzt statt auf den ganzen Account.
 
 ### Storage-Abstraktion
 Identisch zu Tanklog:
-1. **JSONBin** – wenn `CONFIG.MASTER_KEY` gesetzt (GitHub Pages, Normalfall)
+1. **JSONBin** – wenn `CONFIG.ACCESS_KEY` gesetzt (GitHub Pages, Normalfall)
 2. **`window.storage`** – wenn in Claude-Artifact-Umgebung ausgeführt
 3. **`localStorage`** – Fallback (kein Sharing zwischen Geräten)
 
@@ -167,6 +170,27 @@ Runden nach dem 21.06.2025, + 2 für ältere (zwei ExSc-Ereignisse: 21.06.2025
 und 08.08.2026, beide je −1, jeweils rückwirkend auf alle Einträge der
 Scoring Record).
 
+**Zum PCC:** Der Export weist für den 08.08.2026 und den 14.06.2026 je einen
+PCC von −1 aus. Nach WHS-Formel müsste er den SD erhöhen
+(`SD = (113/Slope) × (GBE − CR − PCC)`, bei PCC −1 also +1 im Klammerausdruck).
+Nachgerechnet trifft jedoch bei beiden Runden die Variante *ohne* PCC exakt, die
+*mit* PCC verfehlt um 0,9:
+
+| Runde | GBE | ohne PCC | mit PCC | golf.de zeigt |
+|---|---|---|---|---|
+| 08.08.2026 | 99 | 29,3 → 28,3 | 30,2 → 29,2 | **28,3** |
+| 14.06.2026 | 109 | 38,3 → 37,3 | 39,2 → 38,2 | **37,3** |
+
+(Zweite Spalte jeweils nach Abzug der ExSc-Anpassung von −1.)
+
+Der ausgewiesene PCC ist im angezeigten SD also nicht enthalten — trotz
+gegenteiliger Angabe in der Legende des Exports ("Score Differential inklusive
+aller Anpassungen (PCC, ExSc.)"). Ursache ungeklärt; denkbar wäre, dass der PCC
+dokumentiert, aber auf diese Wettspiele nicht angewendet wurde, oder ein
+Anzeigefehler. Für die Validierung von HCPheute ohne Belang, da die App keinen
+PCC verarbeitet — hier nur festgehalten, damit die Rechenwege oben
+nachvollziehbar bleiben.
+
 #### 18 Loch — Rule 5.1a, handicap-unabhängig
 
 Rechenweg: `(GBE − 66,6) × 113 / 125`, gerundet nach `roundHalfUp`.
@@ -250,9 +274,10 @@ gerechnet hat, ließ sich aus dem Export nicht rekonstruieren.
 ## Bekannte Einschränkungen
 - JSONBin Free Tier: 10.000 Requests/Monat, geteilt mit Tanklog (gleicher
   Account)
-- Master Key liegt im öffentlichen HTML-Quelltext (Repo ist public) –
-  bewusst akzeptiertes Risiko, s. o.
+- Access Key liegt im öffentlichen HTML-Quelltext (Repo ist public) –
+  auf diesen einen Bin beschränkt (kein Account-weiter Zugriff mehr, s. o.),
+  Schreibzugriff auf den Bin bleibt trotzdem möglich
 - `robots.txt` schützt nur wohlerzogene Crawler; kein technischer
   Zugriffsschutz
-- Noch kein GitHub-Repository/Deployment eingerichtet (lokaler Stand,
-  Stand: 2026-07-11)
+- Live auf GitHub Pages (`hyper472.github.io/HCPheute/`), Repo
+  `hyper472/HCPheute` (seit 2026-08-03)
