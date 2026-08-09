@@ -1,5 +1,10 @@
 # CONTEXT – HCPheute
 
+**Stand: v1.0.0 (zementiert 2026-08-09)** — Herren/Damen-Abschläge, feste
+Turnierzahl 8, Rule 5.1b als Opt-in bei 9-Loch-Runden, gegen zwölf reale
+DGV-Produktivrunden validiert (s. u.), Access-Key-Setup, live auf GitHub
+Pages.
+
 ## Zweck
 Private Web-App zur Berechnung eines spielerunabhängigen Vergleichs-Handicaps
 nach WHS Rule 5.2a (Erst-Einstufungs-Logik). Gehostet auf GitHub Pages
