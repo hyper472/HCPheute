@@ -150,6 +150,35 @@ für beide gleich bewertet). Endstand:
   (unrundete Werte, erst die Summe mit dem gespielten Differenzial wird
   gerundet).
 
+**Empirischer Beleg für diese Entscheidung (Daten vom 2026-08-16):** Der Bias ist
+an echten Daten messbar, ohne dass es dafür zwei Spieler braucht. Derselbe
+Spieler hat auf demselben Abschlag (GolfRange Nürnberg, gelb, 9 Loch, Par 34,
+CR 33,3, Slope 124) dreimal exakt 55 Schläge gespielt — bei deutlich
+unterschiedlichem Handicap-Index. Die gespielte Leistung ist damit als Konstante
+kontrolliert, der Index bleibt die einzige Variable:
+
+| Datum | HCPI | Expected Score | SD nach Rule 5.1b | HCPheute (Default) |
+|---|---|---|---|---|
+| 04.05.2025 | 44,3 | 24,236 | 19,7750 + 24,236 = **44,0** | 39,6 |
+| 14.06.2025 | 43,7 | 23,924 | 19,7750 + 23,924 = **43,7** | 39,6 |
+| 14.08.2026 | 36,4 | 20,128 | 19,7750 + 20,128 = **39,9** | 39,6 |
+
+Identische Leistung, Spanne von **4,1 Schlägen** im offiziellen Wert — allein
+durch den gesunkenen Index. HCPheute liefert dreimal denselben Wert, weil die
+ungespielte Neun mit der gespielten gleichgesetzt wird
+(`roundHalfUp(19,775) = 19,8`, verdoppelt 39,6).
+
+Praktische Folge über den App-Zweck hinaus: 9-Loch-Score-Differenziale sind im
+Scoring Record über längere Zeiträume **nicht** vergleichbar. Wer daraus einen
+Formverlauf ablesen will, muss die 9-Loch-Runden ausklammern oder auf
+spielerunabhängige Werte umstellen.
+
+**Datenherkunft:** Detaillierter Scoring-Record-Export des DGV vom 16.08.2026
+(Spieler HB). Der Wert für den 14.08.2026 ist direkt abgelesen (`ExSc: 0`,
+keine Anpassung). Die beiden Werte von 2025 sind aus den angezeigten 42,0 bzw.
+41,7 zurückgerechnet: Beide Runden liegen vor den Ausnahme-Ereignissen vom
+21.06.2025 und 08.08.2026 und tragen daher je zwei Anpassungen von −1.
+
 Bei 18-Loch-Runden hat das HCPI-Feld keine Wirkung (UI blendet es aus) —
 Rule 5.1a ist unter WHS handicap-unabhängig, das bildet die App 1:1 nach.
 
