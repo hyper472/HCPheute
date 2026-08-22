@@ -224,6 +224,12 @@ header {
   background:var(--surface); border:1px solid var(--border);
   border-top-left-radius:20px; border-top-right-radius:20px;
   padding:10px 20px 40px; width:100%; max-width:480px;
+  /* Ohne Hoehenbegrenzung wuchs das Modal bei mehreren Abschlaegen ueber
+     den oberen Bildschirmrand hinaus (auf dem iPhone nicht mehr erreichbar,
+     da .overlay unten verankert ist) -- deshalb intern scrollbar machen. */
+  max-height:calc(100vh - max(24px, env(safe-area-inset-top)) - 24px);
+  max-height:calc(100dvh - max(24px, env(safe-area-inset-top)) - 24px);
+  overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
   animation:sheetUp .25s cubic-bezier(.34,1.26,.64,1);
 }
 @keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
