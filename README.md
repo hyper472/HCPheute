@@ -41,10 +41,11 @@ Vergleichswert für eine einzelne Runde, keine laufende, amtliche Einstufung.
 
 1. Tab **Plätze** → **+ Platz hinzufügen**
 2. Name und Löcher (9/18) eintragen
-3. Für jeden Abschlag (z. B. Gelb, Blau, Rot): Name, Par sowie Course Rating
-   und Slope Rating eintragen — für Herren, Damen oder beide. Mindestens
-   einer der beiden Wertesätze ist erforderlich, keiner ist Pflicht oder
-   Vorgabe vor dem anderen.
+3. Für jeden Abschlag (z. B. Gelb, Rot): Name, Geschlecht, Par sowie Course
+   Rating und Slope Rating eintragen. Ein Abschlag ist eine einzelne
+   Tee-Markierung für ein Geschlecht — spielen Herren und Damen
+   unterschiedliche Markierungen (Regelfall), für jede einen eigenen
+   Abschlag anlegen.
 4. Mit **+ Abschlag hinzufügen** weitere Abschläge desselben Platzes ergänzen
 5. **Speichern**
 
@@ -58,13 +59,13 @@ sogar unterschiedliches Par.
 ## Berechnung durchführen
 
 1. Tab **Berechnung** → Platz wählen
-2. Abschlag wählen (die zugehörigen CR/Slope-Werte werden angezeigt)
-3. Falls für den Abschlag Damen-Werte hinterlegt sind: Geschlecht wählen
-4. Schlägeanzahl (Brutto) eintragen
-5. Bei 9-Loch-Plätzen optional: aktuelles HCPI eintragen, wenn die
+2. Abschlag wählen (zeigt Geschlecht sowie die zugehörigen CR/Slope-Werte)
+3. Gewertetes Bruttoergebnis eintragen (nach WHS-Deckelung: pro Loch
+   höchstens Netto-Doppelbogey — im Scoring Record als "GBE" ausgewiesen)
+4. Bei 9-Loch-Plätzen optional: aktuelles HCPI eintragen, wenn die
    regelkonforme, handicap-abhängige Schätzung statt der spielerunabhängigen
    Verdopplung gewünscht ist (leer lassen = spielerunabhängig)
-6. **Berechnen** — der komplette Rechenweg wird angezeigt
+5. **Berechnen** — der komplette Rechenweg wird angezeigt
 
 ---
 
@@ -78,7 +79,6 @@ In der Platzliste unter jedem Eintrag → **✏ Bearbeiten** oder **✕ Löschen
 ## Daten
 
 Alle Plätze werden zentral gespeichert – auf jedem Gerät derselbe Stand,
-ohne Anmeldung. Ältere Plätze im alten, einfachen Format (ein CR/Slope/Par
-pro Platz) werden beim ersten Laden automatisch in das neue
-Abschlag-Format übernommen (als Abschlag "Standard", nur Herren-Werte) —
+ohne Anmeldung. Ältere Plätze in einem der beiden Vorgänger-Formate werden
+beim ersten Laden automatisch ins aktuelle Abschlag-Format übernommen —
 danach in der Platzverwaltung ggf. selbst umbenennen oder ergänzen.

@@ -18,13 +18,19 @@ Design (Farben, PWA-Meta-Tags) nach [Braurechner](../Braurechner.zip).
 ## Technischer Aufbau
 **Eine einzige Datei:** `index.html` – kein Build-Schritt, kein Framework, kein Node.
 
-Herren und Damen sind im Datenmodell und in der UI bewusst gleichrangig
-behandelt (Entscheidung vom 2026-07-12): pro Abschlag ist mindestens ein
-vollständiger Wertesatz (Herren oder Damen oder beide) erforderlich, keines
-von beiden ist per Default gesetzt oder als "optional" markiert. Welche(s)
-Geschlecht(er) tatsächlich zur Auswahl steht, ergibt sich in der
-Berechnungs-UI rein daraus, was am Abschlag hinterlegt wurde
-(`getTeeGenders()`/`resolveGender()` in `index.html`).
+**Ein Abschlag = eine Tee-Markierung für ein Geschlecht (Entscheidung vom
+2026-08-22, ersetzt den Stand vom 2026-07-12):** Zunächst konnte ein Abschlag
+Herren- und Damen-Wertesatz gleichzeitig tragen (gedacht für den Fall, dass
+beide dieselbe Markierung nutzen). In der echten Nutzung stellte sich das als
+reine Verwirrungsquelle heraus — auf dem einzigen bisher genutzten Platz
+(GolfRange Nürnberg) spielen Herren und Damen von zwei verschieden benannten
+Markierungen (Gelb/Rot), und das Formular fragte trotzdem bei jedem Abschlag
+beide Wertesätze ab. Ergebnis war ein produktiver Datensatz mit vier
+Fragment-Plätzen statt zwei sauberen. Auf ausdrücklichen Wunsch ("lieber eine
+Lücke in der App als die ständige Verwirrung") entfernt: ein Abschlag hat
+jetzt genau ein Geschlecht (`gender: 'herren' | 'damen'`) und einen CR/Slope.
+Courses mit unterschiedlichen Markierungen pro Geschlecht bekommen zwei
+Abschlag-Einträge.
 
 ### Abhängigkeiten
 Keine externen Bibliotheken (kein CDN) – nur Systemschriften (Georgia,
@@ -78,9 +84,8 @@ Identisch zu Tanklog:
 3. **`localStorage`** – Fallback (kein Sharing zwischen Geräten)
 
 ### Datenstruktur im Bin
-Ein Platz hat einen oder mehrere Abschläge (`tees`); jeder Abschlag hat
-eigenes Par sowie CR/Slope für Herren und/oder Damen (mindestens einer von
-beiden erforderlich, keines von beiden per Default):
+Ein Platz hat einen oder mehrere Abschläge (`tees`); jeder Abschlag ist eine
+einzelne Tee-Markierung für ein Geschlecht, mit eigenem Par, CR und Slope:
 ```json
 {
   "courses": [
@@ -92,9 +97,18 @@ beiden erforderlich, keines von beiden per Default):
         {
           "id": "tee_...",
           "name": "Gelb",
+          "gender": "herren",
           "par": 72,
-          "herren": { "courseRating": 72.6, "slopeRating": 130 },
-          "damen": { "courseRating": 76.9, "slopeRating": 133 }
+          "courseRating": 72.6,
+          "slopeRating": 130
+        },
+        {
+          "id": "tee_...",
+          "name": "Rot",
+          "gender": "damen",
+          "par": 72,
+          "courseRating": 76.9,
+          "slopeRating": 133
         }
       ],
       "createdAt": "ISO8601"
@@ -103,17 +117,23 @@ beiden erforderlich, keines von beiden per Default):
 }
 ```
 
-`herren` bzw. `damen` ist `null`, wenn für diesen Abschlag keine Werte für
-das jeweilige Geschlecht erfasst wurden. Ist nur eines von beiden gesetzt,
-verwendet die Berechnung automatisch dieses eine und die Geschlecht-Auswahl
-wird in der UI ausgeblendet; sind beide gesetzt, erscheint die Auswahl.
+Spielen beide Geschlechter von derselben Markierung, einfach zwei Abschläge
+mit identischem `name`, aber unterschiedlichem `gender` anlegen — das
+Datenmodell erzwingt keine Eindeutigkeit des Namens.
 
-**Migration:** Platz-Datensätze im alten, flachen Format (ein
-CR/Slope/Par direkt am Platz, kein `tees`-Array — Stand vor 2026-07-12)
-werden beim Laden automatisch von `migrateLegacyCourse()` in einen
-einzelnen Abschlag namens "Standard" (nur Herren-Werte) überführt und
-zurückgespeichert. Betraf beim Umstieg genau einen echten Bestandsplatz
-("Golfrange Nürnberg").
+**Migration (`normalizeCourse()`), zwei Alt-Formate:**
+1. Ganz altes Format ohne `tees`-Array (ein CR/Slope/Par direkt am Platz,
+   Stand vor 2026-07-12) → ein Abschlag "Standard", Geschlecht Herren.
+2. Zwischenformat mit `tees`-Array, aber `herren`/`damen` als zwei optionale
+   Wertesätze *in einem* Abschlag (Stand 2026-07-12 bis 2026-08-22) → pro
+   erfasstem Geschlecht ein eigener, flacher Abschlag. War an einem Abschlag
+   ausnahmsweise beides erfasst, werden daraus zwei Abschläge mit demselben
+   Namen plus Geschlecht in Klammern angehängt.
+
+Beide Migrationen laufen automatisch beim Laden und schreiben das Ergebnis
+zurück. Betroffen beim jeweiligen Umstieg: zunächst ein echter Bestandsplatz
+("Golfrange Nürnberg", 2026-07-12), später vier Fragment-Plätze aus
+Zwischenformat-Verwirrung (2026-08-22, s. o.).
 
 Kein Speichern einzelner Berechnungsergebnisse (bewusste MVP-Entscheidung,
 s. u.) – nur die Platzliste ist persistent.
@@ -267,10 +287,10 @@ gerechnet hat, ließ sich aus dem Export nicht rekonstruieren.
 ---
 
 ## Features
-- Platzverwaltung: Plätze mit mehreren Abschlägen (Herren/Damen)
+- Platzverwaltung: Plätze mit mehreren Abschlägen (je Herren oder Damen)
   anlegen/bearbeiten/löschen (Löschen mit Sicherheitsabfrage)
-- Berechnung: Platz → Abschlag → ggf. Geschlecht → Schlägeanzahl (→ bei
-  9-Loch optional aktuelles HCPI, s. o.) eingeben, Ergebnis mit sichtbarem
+- Berechnung: Platz → Abschlag (Geschlecht steckt bereits im Abschlag) →
+  Schlägeanzahl (→ bei 9-Loch optional aktuelles HCPI, s. o.) eingeben, Ergebnis mit sichtbarem
   Rechenweg (Differenzial → ggf. Expected-Score/18-Loch-Äquivalent →
   Tabellenzeile → Endwert)
 - PWA: `apple-mobile-web-app-capable` + Apple-Touch-Icon (Muster:

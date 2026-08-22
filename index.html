@@ -297,8 +297,6 @@ header {
           <div class="field-hint" id="teeInfoHint"></div>
         </div>
 
-        <div id="calcGenderWrap"></div>
-
         <div class="field">
           <label for="calcStrokes">Gewertetes Bruttoergebnis</label>
           <input type="number" id="calcStrokes" inputmode="numeric" min="1" placeholder="z. B. 94">
@@ -349,7 +347,7 @@ header {
       </div>
       <div class="field">
         <label>Abschläge</label>
-        <div class="field-hint" style="margin-top:0; margin-bottom:10px">Ein Abschlag ist eine Tee-Markierung/-Farbe auf dem Platz. Spielen Herren und Damen von unterschiedlichen Markierungen (häufigster Fall) — z. B. Herren Gelb, Damen Rot — bitte zwei eigene Abschläge anlegen, jeden nur mit dem passenden Wertesatz. Nur wenn beide dieselbe Markierung nutzen, gehören beide Wertesätze in einen Abschlag.</div>
+        <div class="field-hint" style="margin-top:0; margin-bottom:10px">Ein Abschlag ist eine Tee-Markierung/-Farbe auf dem Platz, für ein Geschlecht. Spielen Herren und Damen unterschiedliche Markierungen (Regelfall, z. B. Herren Gelb, Damen Rot), je einen eigenen Abschlag anlegen.</div>
         <div id="cfTeesContainer"></div>
         <button type="button" class="btn-add-tee" onclick="addTeeRow()">+ Abschlag hinzufügen</button>
       </div>
@@ -542,7 +540,7 @@ function renderCourseSelect() {
     document.getElementById('courseHint').textContent = 'Bitte zuerst unter "Plätze" einen Platz anlegen.';
     document.getElementById('teeField').style.display = 'none';
     document.getElementById('hcpiField').style.display = 'none';
-    renderGenderOptions(null);
+    updateTeeInfoHint();
     return;
   }
   sel.innerHTML = '<option value="">-- Platz wählen --</option>' +
@@ -562,14 +560,16 @@ function onCourseChange() {
     hint.textContent = COURSES.length ? '' : 'Bitte zuerst unter "Plätze" einen Platz anlegen.';
     teeField.style.display = 'none';
     hcpiField.style.display = 'none';
-    renderGenderOptions(null);
+    updateTeeInfoHint();
     return;
   }
 
   teeField.style.display = '';
   const teeSel = document.getElementById('calcTee');
   const prevTee = teeSel.value;
-  teeSel.innerHTML = course.tees.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (Par ${t.par})</option>`).join('');
+  teeSel.innerHTML = course.tees.map(t =>
+    `<option value="${t.id}">${escapeHtml(t.name)} — ${t.gender === 'damen' ? 'Damen' : 'Herren'} (Par ${t.par})</option>`
+  ).join('');
   if (prevTee && course.tees.some(t => t.id === prevTee)) teeSel.value = prevTee;
   onTeeChange();
 
@@ -580,40 +580,6 @@ function onCourseChange() {
 }
 
 function onTeeChange() {
-  const course = COURSES.find(x => x.id === document.getElementById('calcCourse').value);
-  if (!course) { renderGenderOptions(null); return; }
-  const tee = course.tees.find(t => t.id === document.getElementById('calcTee').value);
-  renderGenderOptions(tee);
-}
-
-// Beide Geschlechter gleichrangig behandeln: welche tatsächlich erfasst
-// sind, entscheidet allein, was zur Auswahl steht — keine Vorrangregel.
-function getTeeGenders(tee) {
-  const genders = [];
-  if (tee.herren) genders.push('herren');
-  if (tee.damen) genders.push('damen');
-  return genders;
-}
-
-function resolveGender(tee) {
-  const genders = getTeeGenders(tee);
-  const genderInput = document.querySelector('input[name=calcGender]:checked');
-  if (genderInput && genders.includes(genderInput.value)) return genderInput.value;
-  return genders[0];
-}
-
-function renderGenderOptions(tee) {
-  const wrap = document.getElementById('calcGenderWrap');
-  if (!tee) { wrap.innerHTML = ''; updateTeeInfoHint(); return; }
-  const genders = getTeeGenders(tee);
-  wrap.innerHTML = genders.length === 2 ? `
-    <div class="field">
-      <label>Geschlecht</label>
-      <div class="radio-group">
-        <label><input type="radio" name="calcGender" value="herren" checked onchange="updateTeeInfoHint()"> Herren</label>
-        <label><input type="radio" name="calcGender" value="damen" onchange="updateTeeInfoHint()"> Damen</label>
-      </div>
-    </div>` : '';
   updateTeeInfoHint();
 }
 
@@ -622,8 +588,7 @@ function updateTeeInfoHint() {
   const course = COURSES.find(x => x.id === document.getElementById('calcCourse').value);
   const tee = course ? course.tees.find(t => t.id === document.getElementById('calcTee').value) : null;
   if (!tee) { hintEl.textContent = ''; return; }
-  const data = tee[resolveGender(tee)];
-  hintEl.textContent = `CR ${data.courseRating.toFixed(1)} / Slope ${data.slopeRating} (Par ${tee.par})`;
+  hintEl.textContent = `CR ${tee.courseRating.toFixed(1)} / Slope ${tee.slopeRating} (Par ${tee.par})`;
 }
 
 // Feste Annahme (Rule 5.2a): so tun, als wäre der Spieler vor 8 Tagen mit der
@@ -637,8 +602,6 @@ function doCalc() {
 
   const tee = course.tees.find(t => t.id === document.getElementById('calcTee').value);
   if (!tee) { showToast('Bitte einen Abschlag wählen.', 'err'); return; }
-
-  const genderData = tee[resolveGender(tee)];
 
   const strokes = parseInt(document.getElementById('calcStrokes').value, 10);
   if (!strokes || strokes < 1) { showToast('Bitte eine gültige Schlägeanzahl eingeben.', 'err'); return; }
@@ -654,7 +617,7 @@ function doCalc() {
   }
 
   const result = calculate({
-    strokes, courseRating: genderData.courseRating, slopeRating: genderData.slopeRating,
+    strokes, courseRating: tee.courseRating, slopeRating: tee.slopeRating,
     holes: course.holes, tournamentCount: TOURNAMENT_COUNT, currentHCPI
   });
 
@@ -692,17 +655,12 @@ function renderCourseList() {
         <div class="course-info-name">${escapeHtml(c.name)}</div>
         <div class="course-info-meta">${c.holes} Loch</div>
         <div class="tee-list">
-          ${c.tees.map(t => {
-            const parts = [];
-            if (t.herren) parts.push(`Herren CR ${t.herren.courseRating.toFixed(1)}/${t.herren.slopeRating}`);
-            if (t.damen) parts.push(`Damen CR ${t.damen.courseRating.toFixed(1)}/${t.damen.slopeRating}`);
-            return `
+          ${c.tees.map(t => `
             <div class="tee-chip-row">
               <span class="tee-chip-name">${escapeHtml(t.name)}</span>
-              <span>Par ${escapeHtml(t.par)} · ${escapeHtml(parts.join(' · '))}</span>
+              <span>${t.gender === 'damen' ? 'Damen' : 'Herren'} · Par ${t.par} · CR ${t.courseRating.toFixed(1)}/${t.slopeRating}</span>
             </div>
-          `;
-          }).join('')}
+          `).join('')}
         </div>
       </div>
       <div class="course-acts">
@@ -715,7 +673,7 @@ function renderCourseList() {
 
 function makeEmptyTee() {
   return { id: 'tee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    name: '', par: '', herrenCR: '', herrenSlope: '', damenCR: '', damenSlope: '' };
+    name: '', gender: 'herren', par: '', courseRating: '', slopeRating: '' };
 }
 
 function renderTeeRows() {
@@ -725,23 +683,25 @@ function renderTeeRows() {
         <input type="text" placeholder="Abschlag, z. B. Gelb" value="${escapeHtml(t.name)}" oninput="updateTeeField(${i},'name',this.value)">
         ${editingTees.length > 1 ? `<button type="button" class="tee-remove-btn" onclick="removeTeeRow(${i})">✕</button>` : ''}
       </div>
+      <div class="tee-gender-label">Geschlecht</div>
+      <div class="radio-group" style="margin-bottom:10px">
+        <label><input type="radio" name="teeGender${i}" value="herren" ${t.gender === 'damen' ? '' : 'checked'} onchange="updateTeeField(${i},'gender',this.value)"> Herren</label>
+        <label><input type="radio" name="teeGender${i}" value="damen" ${t.gender === 'damen' ? 'checked' : ''} onchange="updateTeeField(${i},'gender',this.value)"> Damen</label>
+      </div>
       <div class="tee-par-field">
         <label>Par</label>
         <input type="number" step="1" value="${escapeHtml(t.par)}" oninput="updateTeeField(${i},'par',this.value)">
       </div>
       <div class="tee-gender-grid">
         <div class="tee-gender-col">
-          <div class="tee-gender-label">Herren (CR / Slope)</div>
-          <input type="number" step="0.1" placeholder="CR" value="${escapeHtml(t.herrenCR)}" oninput="updateTeeField(${i},'herrenCR',this.value)">
-          <input type="number" step="1" placeholder="Slope" value="${escapeHtml(t.herrenSlope)}" oninput="updateTeeField(${i},'herrenSlope',this.value)">
+          <div class="tee-gender-label">CR</div>
+          <input type="number" step="0.1" placeholder="CR" value="${escapeHtml(t.courseRating)}" oninput="updateTeeField(${i},'courseRating',this.value)">
         </div>
         <div class="tee-gender-col">
-          <div class="tee-gender-label">Damen (CR / Slope)</div>
-          <input type="number" step="0.1" placeholder="CR" value="${escapeHtml(t.damenCR)}" oninput="updateTeeField(${i},'damenCR',this.value)">
-          <input type="number" step="1" placeholder="Slope" value="${escapeHtml(t.damenSlope)}" oninput="updateTeeField(${i},'damenSlope',this.value)">
+          <div class="tee-gender-label">Slope</div>
+          <input type="number" step="1" placeholder="Slope" value="${escapeHtml(t.slopeRating)}" oninput="updateTeeField(${i},'slopeRating',this.value)">
         </div>
       </div>
-      <div class="field-hint">Mindestens ein vollständiger Wertesatz (Herren oder Damen) ist erforderlich — beide dürfen ausgefüllt werden.</div>
     </div>
   `).join('');
 }
@@ -774,9 +734,8 @@ function openEditCourse(id) {
   document.getElementById('cfName').value = c.name;
   document.querySelector(`input[name=cfHoles][value="${c.holes}"]`).checked = true;
   editingTees = c.tees.map(t => ({
-    id: t.id, name: t.name, par: t.par,
-    herrenCR: t.herren ? t.herren.courseRating : '', herrenSlope: t.herren ? t.herren.slopeRating : '',
-    damenCR: t.damen ? t.damen.courseRating : '', damenSlope: t.damen ? t.damen.slopeRating : ''
+    id: t.id, name: t.name, gender: t.gender, par: t.par,
+    courseRating: t.courseRating, slopeRating: t.slopeRating
   }));
   renderTeeRows();
   openOverlay('courseFormOverlay');
@@ -788,41 +747,20 @@ async function saveCourse() {
 
   if (!name) { showToast('Bitte einen Namen eingeben.', 'err'); return; }
 
-  // Liest ein Geschlecht-Wertepaar; wirft (via Rückgabe null + Fehler-Toast)
-  // nur, wenn GENAU eines der beiden Felder ausgefüllt ist (unvollständig).
-  // Beide leer -> null (dieses Geschlecht schlicht nicht erfasst).
-  function readGenderPair(crRaw, slopeRaw, label, teeName) {
-    const crStr = String(crRaw ?? '').trim();
-    const slopeStr = String(slopeRaw ?? '').trim();
-    if (crStr === '' && slopeStr === '') return { value: null, ok: true };
-    const cr = parseFloat(crStr);
-    const slope = parseInt(slopeStr, 10);
-    if (!cr || cr <= 0 || !slope || slope <= 0) {
-      showToast(`${label}-Werte für "${teeName}" bitte vollständig oder gar nicht ausfüllen.`, 'err');
-      return { value: null, ok: false };
-    }
-    return { value: { courseRating: cr, slopeRating: slope }, ok: true };
-  }
-
   const tees = [];
   for (const t of editingTees) {
     const teeName = (t.name || '').trim();
+    const gender = t.gender === 'damen' ? 'damen' : 'herren';
     const par = parseInt(t.par, 10);
+    const courseRating = parseFloat(t.courseRating);
+    const slopeRating = parseInt(t.slopeRating, 10);
 
     if (!teeName) { showToast('Bitte für jeden Abschlag einen Namen eingeben.', 'err'); return; }
     if (!par || par <= 0) { showToast(`Bitte ein gültiges Par für "${teeName}" eingeben.`, 'err'); return; }
+    if (!courseRating || courseRating <= 0) { showToast(`Bitte eine gültige Course Rating für "${teeName}" eingeben.`, 'err'); return; }
+    if (!slopeRating || slopeRating <= 0) { showToast(`Bitte eine gültige Slope Rating für "${teeName}" eingeben.`, 'err'); return; }
 
-    const herrenResult = readGenderPair(t.herrenCR, t.herrenSlope, 'Herren', teeName);
-    if (!herrenResult.ok) return;
-    const damenResult = readGenderPair(t.damenCR, t.damenSlope, 'Damen', teeName);
-    if (!damenResult.ok) return;
-
-    if (!herrenResult.value && !damenResult.value) {
-      showToast(`Bitte für "${teeName}" mindestens Herren- oder Damen-Werte eingeben.`, 'err');
-      return;
-    }
-
-    tees.push({ id: t.id, name: teeName, par, herren: herrenResult.value, damen: damenResult.value });
+    tees.push({ id: t.id, name: teeName, gender, par, courseRating, slopeRating });
   }
 
   if (editingCourseId) {
@@ -878,22 +816,53 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ── Migration: altes flaches Format (ein CR/Slope/Par pro Platz) auf
-   das neue Abschlag-Format (tees-Array mit Herren/Damen) heben. ── */
-function migrateLegacyCourse(c) {
-  return {
-    id: c.id,
-    name: c.name,
-    holes: c.holes,
-    tees: [{
-      id: 'tee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      name: 'Standard',
-      par: c.par,
-      herren: { courseRating: c.courseRating, slopeRating: c.slopeRating },
-      damen: null
-    }],
-    createdAt: c.createdAt
-  };
+/* ── Migration: zwei Alt-Formate auf das aktuelle, flache Abschlag-Format
+   (ein Geschlecht pro Abschlag) heben:
+   1. ganz altes Format ohne tees-Array (ein CR/Slope/Par direkt am Platz,
+      Stand vor 2026-07-12) -> ein Abschlag "Standard", Geschlecht Herren.
+   2. Zwischenformat mit tees-Array, aber Herren/Damen als zwei Wertesätze
+      IN EINEM Abschlag (Stand 2026-07-12 bis 2026-08-22) -> pro erfasstem
+      Geschlecht ein eigener, flacher Abschlag. Waren an einem Abschlag
+      beide Geschlechter erfasst (in der Praxis nie genutzt), werden daraus
+      zwei Abschläge mit demselben Namen plus Geschlecht in Klammern. ── */
+function normalizeCourse(c) {
+  if (!Array.isArray(c.tees)) {
+    return { changed: true, course: {
+      id: c.id, name: c.name, holes: c.holes,
+      tees: [{
+        id: 'tee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: 'Standard', gender: 'herren', par: c.par,
+        courseRating: c.courseRating, slopeRating: c.slopeRating
+      }],
+      createdAt: c.createdAt
+    }};
+  }
+
+  let changed = false;
+  const newTees = [];
+  for (const t of c.tees) {
+    if (typeof t.gender === 'string' && typeof t.courseRating === 'number') {
+      newTees.push(t);
+      continue;
+    }
+    changed = true;
+    const both = !!(t.herren && t.damen);
+    if (t.herren) {
+      newTees.push({
+        id: t.id + (both ? '_h' : ''), name: both ? `${t.name} (Herren)` : t.name,
+        gender: 'herren', par: t.par,
+        courseRating: t.herren.courseRating, slopeRating: t.herren.slopeRating
+      });
+    }
+    if (t.damen) {
+      newTees.push({
+        id: t.id + (both ? '_d' : ''), name: both ? `${t.name} (Damen)` : t.name,
+        gender: 'damen', par: t.par,
+        courseRating: t.damen.courseRating, slopeRating: t.damen.slopeRating
+      });
+    }
+  }
+  return { changed, course: changed ? { ...c, tees: newTees } : c };
 }
 
 /* ── Start ── */
@@ -901,13 +870,13 @@ async function init() {
   const loaded = await sLoadCourses();
   let migrated = false;
   COURSES = loaded.map(c => {
-    if (Array.isArray(c.tees)) return c;
-    migrated = true;
-    return migrateLegacyCourse(c);
+    const r = normalizeCourse(c);
+    if (r.changed) migrated = true;
+    return r.course;
   });
   if (migrated) {
     await sSaveCourses(COURSES);
-    showToast('Bestehende Plätze auf Abschlag-Format migriert.', 'ok');
+    showToast('Bestehende Plätze auf neues Abschlag-Format migriert.', 'ok');
   }
   renderCourseList();
   renderCourseSelect();
